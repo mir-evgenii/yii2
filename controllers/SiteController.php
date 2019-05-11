@@ -36,11 +36,11 @@ class SiteController extends Controller
 
             if ($l_form) {
                 // если категория является родительской то не удаляем ее а выводим сообщение
-                $msg = 'Родительская категория не может быть удалена! <a href="index.php?r=site/index">ОК</a><br>';
+		$msg = $this->createMessаge('Родительская категория не может быть удалена!', 0);
                 return $this->render('index', compact('msg'));
             } elseif ($r_form) {
-                // если категория содержит товары то не удаляем ее а выводим сообщение
-                $msg = 'Категорию нельзя удалить пока в ней содержатся товары! <a href="index.php?r=site/index">ОК</a><br>';
+		 // если категория содержит товары то не удаляем ее а выводим сообщение
+		$msg = $this->createMessаge('Категорию нельзя удалить пока в ней содержатся товары!', 0);
                 return $this->render('index', compact('msg'));
             } else {
                 // если категория не является родительской и не содержит товары то удаляем ее
@@ -48,8 +48,7 @@ class SiteController extends Controller
                 // удаляем связи категории
                 $del = Clinks::findOne($c_del);
                 $del->delete();
-                $msg = 'Категория удалена! <a href="index.php?r=site/index">ОК</a><br>';
-
+		$msg = $this->createMessаge('Категория удалена!', 1);
                 return $this->render('index', compact('msg'));
             }
         }
@@ -63,7 +62,7 @@ class SiteController extends Controller
             // удаляем связь товара с кататегорией
             $del = Links::findOne($g_del);
             $del->delete();
-            $msg = "Товар удален!<br>";
+	    $msg = $this->createMessаge('Товар удален!', 1);
         } else {
             $msg = null;
         }
@@ -107,9 +106,9 @@ class SiteController extends Controller
             // если данные переданы сохраняем их и выводим сообщение об успехе
             // иначе выводим сообщение об ошибке
             if($form->save() && $l_form->save()){
-                $msg = "Категория создана! <a href='index.php?r=site/create-category'>ОК</a><br>";
+		$msg = $this->createMessаge('Категория создана!', 1);
             } else {
-                $msg = "Категория не создана! <a href='index.php?r=site/create-category'>ОК</a><br>";
+		$msg = $this->createMessаge('Категория не создана!', 0);
             }
         } else {
             $msg = null;
@@ -134,9 +133,9 @@ class SiteController extends Controller
         if ( $form->load(Yii::$app->request->post()) && $l_form->load(Yii::$app->request->post()) ){
             // если переданы данные сохраняем их и выводим сообщение об успехе иначе ошибка
             if($form->save() && $l_form->save()){
-                $msg = "Товар создан! <a href='index.php?r=site/create-good'>ОК</a><br>";
+		$msg = $this->createMessаge('Товар создан!', 1);
             } else {
-                $msg = "Товар не создан! <a href='index.php?r=site/create-good'>ОК</a><br>";
+		$msg = $this->createMessаge('Товар не создан!', 0);
             }
         } else {
             $msg = null;
@@ -170,9 +169,9 @@ class SiteController extends Controller
             if ( $form->load(Yii::$app->request->post())) {
                 // если данные получены сохраняем их и выводим сообщение об успехе иначе ошибка
                 if ($form->save()) {
-                    $msg = "Категория изменена! <a href='index.php?r=site/index'>ОК</a><br>";
+		    $msg = $this->createMessаge('Категория изменена!', 1);
                 } else {
-                    $msg = "Категория не изменена! <a href='index.php?r=site/index'>ОК</a><br>";
+		    $msg = $this->createMessаge('Категория не изменена!', 0);
                 }
             } else {
                 $msg = null;
@@ -183,9 +182,9 @@ class SiteController extends Controller
             if ( $form->load(Yii::$app->request->post()) && $l_form->load(Yii::$app->request->post()) ) {
                 // если данные получены сохраняем их и выводим сообщение об успехе иначе ошибка
                 if ($form->save() && $l_form->save()) {
-                    $msg = "Категория изменена! <a href='index.php?r=site/index'>ОК</a><br>";
+		    $msg = $this->createMessаge('Категория изменена!', 1);
                 } else {
-                    $msg = "Категория не изменена! <a href='index.php?r=site/index'>ОК</a><br>";
+		    $msg = $this->createMessаge('Категория не изменена!', 0);
                 }
             } else {
                 $msg = null;
@@ -215,9 +214,9 @@ class SiteController extends Controller
         if ( $form->load(Yii::$app->request->post()) && $l_form->load(Yii::$app->request->post())) {
             // если данные переданы сохраняем их и выводим сообщение об успехе иначе ошибка
             if ($form->save() && $l_form->save()) {
-                $msg = "Товар изменен! <a href='index.php?r=site/index'>ОК</a><br>";
+		$msg = $this->createMessаge('Товар изменен!', 1);
             } else {
-                $msg = "Товар не изменен! <a href='index.php?r=site/index'>ОК</a><br>";
+		$msg = $this->createMessаge('Товар не изменен!', 0);
             }
         } else {
             $msg = null;
@@ -228,5 +227,15 @@ class SiteController extends Controller
         $cat = Categorys::findBySql($query)->asArray()->all();
 
         return $this->render('change_good', compact('form', 'l_form', 'msg', 'cat'));
+    }
+
+    private function createMessаge($msg, $color)
+    {
+	    if ($color==1) {
+	   	$msg = '<div class="alert alert-success" role="alert">'.$msg.' <a class="btn btn-success" href="index.php?r=site/index" role="button">OK</a></div>'; 
+	    } else {
+	   	$msg = '<div class="alert alert-danger" role="alert">'.$msg.' <a class="btn btn-danger" href="index.php?r=site/index" role="button">OK</a></div>';  
+	    }
+	    return $msg;
     }
 }

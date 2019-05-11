@@ -5,10 +5,6 @@
 // сообщение об ошибке или успехе
 echo $msg;
 
-// ссылки на формы создания категории и товара
-echo "<a href='index.php?r=site/create-category'>Создать категорию</a><br>";
-echo "<a href='index.php?r=site/create-good'>Создать товар</a><br>";
-
 
 
 // выводим категории первого уровня
