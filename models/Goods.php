@@ -1,16 +1,8 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Евгений
- * Date: 21.10.2018
- * Time: 11:11
- */
-
 namespace app\models;
 
 use yii\db\ActiveRecord;
 
-// Модель связанная с таблицей goods (товары)
 class Goods extends ActiveRecord
 {
     public function getCategorys(){
@@ -29,9 +21,13 @@ class Goods extends ActiveRecord
     public function rules()
     {
         return [
-            ['good', 'string', 'min' => 3, 'max' => 32],
-            [['good', 'price', 'number'], 'required'],
-            [['good', 'price', 'number'], 'trim']
+            ['good', 'string', 'min' => 3, 'max' => 32, 
+            'message' => 'Название товара должно быть от 3 до 32 символов.'],
+            [['good', 'price', 'number'], 'required', 
+            'message' => 'Поле является обязательным для заполнения.'],
+            [['good', 'price', 'number'], 'trim'],
+            [['price', 'number'], 'integer', 
+            'message' => 'Значение поля должно быть целым числом.']
         ];
     }
 }

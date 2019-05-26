@@ -1,16 +1,8 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Евгений
- * Date: 21.10.2018
- * Time: 14:46
- */
-
 namespace app\models;
 
 use yii\db\ActiveRecord;
 
-// Модель связанная с таблицей links (связи товаров и категорий)
 class Links extends ActiveRecord
 {
     public function getGoods(){
@@ -31,7 +23,10 @@ class Links extends ActiveRecord
     public function rules()
     {
         return [
-            ['id_category', 'required'],
+            ['id_category', 'integer', 
+            'message' => 'Значение поля должно быть целым числом.'],
+            ['id_category', 'required', 
+            'message' => 'Значение поля обязательно для заполнения.'],
             ['id_category', 'trim']
         ];
     }

@@ -1,12 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Евгений
- * Date: 19.10.2018
- * Time: 11:22
- */
-
 namespace app\controllers;
+
 use yii\web\Controller;
 use app\models\Goods;
 use app\models\Categorys;
@@ -16,226 +10,232 @@ use Yii;
 
 class SiteController extends Controller
 {
+    // переменные необходимые для вызова конструктора parent::__construct()
+    // родительского класса Controller
+    public $id;
+    public $module;
 
-    // главная страница
-    public function actionIndex($id = null, $c_del = null, $g_del = null)
+    public $arr_all_categorys;
+    public $form_category;
+    public $form_clink;
+    public $form_good;
+    public $form_link;
+    public $msg = null;
+
+    public function __construct($id, $module, $config = [])
     {
+        // вызов котроллера родительского класса Controller
+        parent::__construct($id, $module, $config = []);
 
-        // удаление категории
-        if ($c_del) {
-            // выбираем категорию
-            $del = Categorys::findOne($c_del);
-
-            // проверяем является ли категория родительской
-            $query = "SELECT * FROM clinks WHERE id_category_parent LIKE {$c_del}";
-            $l_form = Clinks::findBySql($query)->one();
-
-            // проверяем содержатся ли в категории товары
-            $query = "SELECT * FROM links WHERE id_category LIKE {$c_del}";
-            $r_form = Links::findBySql($query)->one();
-
-            if ($l_form) {
-                // если категория является родительской то не удаляем ее а выводим сообщение
-		$msg = $this->createMessаge('Родительская категория не может быть удалена!', 0);
-                return $this->render('index', compact('msg'));
-            } elseif ($r_form) {
-		 // если категория содержит товары то не удаляем ее а выводим сообщение
-		$msg = $this->createMessаge('Категорию нельзя удалить пока в ней содержатся товары!', 0);
-                return $this->render('index', compact('msg'));
-            } else {
-                // если категория не является родительской и не содержит товары то удаляем ее
-                $del->delete();
-                // удаляем связи категории
-                $del = Clinks::findOne($c_del);
-                $del->delete();
-		$msg = $this->createMessаge('Категория удалена!', 1);
-                return $this->render('index', compact('msg'));
-            }
-        }
-
-
-        // удаление товара
-        if ($g_del) {
-            // выбираем и удаляем товар
-            $del = Goods::findOne($g_del);
-            $del->delete();
-            // удаляем связь товара с кататегорией
-            $del = Links::findOne($g_del);
-            $del->delete();
-	    $msg = $this->createMessаge('Товар удален!', 1);
-        } else {
-            $msg = null;
-        }
-
-
-        // выводим каталог товаров и категорий
-        if ($id){
-            // выбираем текущюю категорию по id
-            $cat = Categorys::findOne($id);
-            // записываем имя текущей категрии cat
-            $cat = $cat->category;
-
-            // выбираем все категории являюшиеся вложенными в текущюю категорию
-            $query = "SELECT * FROM clinks WHERE id_category_parent = {$id} GROUP BY id_category_child";
-            $childs = Clinks::findBySql($query)->with('child')->all();
-
-            // выбираем все товары вложенные в текущюю категорию
-            $query = "SELECT * FROM links WHERE id_category = {$id} GROUP BY id_good";
-            $goods = Links::findBySql($query)->with('goods')->all();
-        } else {
-            // если id не указан, то есть страница Index то выводим категории которые не являются вложенными
-            // то есть выводим категории первого уровня
-            // текущяя директория равна нулю
-            $cat = null;
-            $query = "SELECT * FROM clinks WHERE id_category_parent != id_category_child GROUP BY id_category_parent";
-            $parents = Clinks::findBySql($query)->with('parent')->all();
-        }
-        return $this->render('index', compact('parents', 'childs', 'goods', 'msg', 'cat'));
+        $this->arr_all_categorys = $this->getCategorysArr();
+        $this->form_category = new Categorys();
+        $this->form_clink = new Clinks();
+        $this->form_good = new Goods();
+        $this->form_link = new Links();
     }
 
+    // $id - текущая категория,
+    // по умолчанию "0" то есть "Корневая"
+    public function actionIndex(
+        $id = 0, 
+        $id_del_category = null,
+        $id_del_good = null
+    )
+    {
+        if ($id_del_category) {
+            $this->msg = $this->deleteCategory($id_del_category);
+        } elseif ($id_del_good) {
+            $this->msg = $this->deleteGood($id_del_good);
+        }
 
+        $name_this_category = Categorys::findOne($id)->category;
+        $id_parent_category = Clinks::find()
+            ->where(['id_category_child' => $id])
+            ->one();
 
-    // Создание категории
+        $categorys = Clinks::find()
+            ->where(['id_category_parent' => $id])
+            ->groupBy('id_category_child')
+            ->all();
+
+        $goods = Links::find()
+            ->where(['id_category' => $id])
+            ->groupBy('id_good')
+            ->all();
+
+        return $this->render('index', [
+            'id' => $id, 
+            'id_parent_category' => $id_parent_category,
+            'categorys' => $categorys,
+            'goods' => $goods,
+            'msg' => $this->msg,
+            'name_this_category' => $name_this_category
+        ]);
+    }
+
     public function actionCreateCategory()
     {
-        // создаем новый обьект категории и обьект связи с другими категориями
-        $form = new Categorys();
-        $l_form = new Clinks();
+        if ($this->form_category->load(Yii::$app->request->post())
+            && $this->form_clink->load(Yii::$app->request->post())) {
 
-        if ( $form->load(Yii::$app->request->post()) && $l_form->load(Yii::$app->request->post()) ){
-            // если данные переданы сохраняем их и выводим сообщение об успехе
-            // иначе выводим сообщение об ошибке
-            if($form->save() && $l_form->save()){
-		$msg = $this->createMessаge('Категория создана!', 1);
+            if ($this->form_category->validate()
+                && $this->form_clink->validate()) {
+                
+                $this->form_category->save();
+                $this->form_clink->save();
+                $this->msg = ['Категория создана!', 1];
             } else {
-		$msg = $this->createMessаge('Категория не создана!', 0);
+                $this->msg = ['Категория не создана!', 0];
             }
-        } else {
-            $msg = null;
         }
 
-        // выбираем все категории и передаем в форму создания категории
-        $query = "SELECT * FROM categorys";
-        $cat = Categorys::findBySql($query)->asArray()->all();
-
-        return $this->render('create_category', compact('form', 'l_form', 'msg', 'cat'));
+        return $this->render('create_category', [
+            'form_category' => $this->form_category,
+            'form_clink' => $this->form_clink,
+            'msg' => $this->msg,
+            'arr_all_categorys' => $this->arr_all_categorys
+        ]);
     }
 
-
-
-    // Создание товара
     public function actionCreateGood()
     {
-        // Создаем обьект товара и обьект связи с категориями
-        $form = new Goods();
-        $l_form = new Links();
-
-        if ( $form->load(Yii::$app->request->post()) && $l_form->load(Yii::$app->request->post()) ){
-            // если переданы данные сохраняем их и выводим сообщение об успехе иначе ошибка
-            if($form->save() && $l_form->save()){
-		$msg = $this->createMessаge('Товар создан!', 1);
+        if ($this->form_good->load(Yii::$app->request->post())
+            && $this->form_link->load(Yii::$app->request->post())) {
+            
+            if ($this->form_good->validate() && $this->form_link->validate()) {
+                $this->form_good->save();
+                $this->form_link->save();
+                $this->msg = ['Товар создан!', 1];
             } else {
-		$msg = $this->createMessаge('Товар не создан!', 0);
+                $this->msg = ['Товар не создан!', 0];
             }
-        } else {
-            $msg = null;
         }
 
-        // выбираем все категории и передаем в форму создания товара
-        $query = "SELECT * FROM categorys";
-        $cat = Categorys::findBySql($query)->asArray()->all();
-
-        return $this->render('create_good', compact('form', 'l_form', 'msg', 'cat'));
+        return $this->render('create_good', [
+            'form_good' => $this->form_good,
+            'form_link' => $this->form_link,
+            'msg' => $this->msg,
+            'arr_all_categorys' => $this->arr_all_categorys
+        ]);
     }
 
-
-
-    // Изменение категории
     public function actionChangeCategory($id = null)
     {
-        // выбираем категорию по id
-        $form = Categorys::findOne($id);
+        $this->form_category = Categorys::findOne($id);
+        $this->form_clink = Clinks::find()
+            ->where(['id_category_child' => $id])
+            ->one();
 
-        // выбираем категорию к которой принадлежит изменяемая категория
-        $query = "SELECT * FROM clinks WHERE id_category_child LIKE {$id}";
-        $l_form = Clinks::findBySql($query)->one();
-
-
-        if (!($l_form)){
-            // если у категории нет родительской категории (категория первого уровня)
-            // то работаем только с обьектом категории
-            // то есть только с именем категории
-            $l_form = null;
-            if ( $form->load(Yii::$app->request->post())) {
-                // если данные получены сохраняем их и выводим сообщение об успехе иначе ошибка
-                if ($form->save()) {
-		    $msg = $this->createMessаge('Категория изменена!', 1);
-                } else {
-		    $msg = $this->createMessаge('Категория не изменена!', 0);
-                }
+        if ($this->form_category->load(Yii::$app->request->post())
+            && $this->form_clink->load(Yii::$app->request->post())) {
+            
+            if ($this->form_category->save() && $this->form_clink->save()) {
+                $this->msg = ['Категория изменена!', 1];
             } else {
-                $msg = null;
-            }
-        } else {
-            // если у категории есть родительская категория
-            // то работаем с обоими обьектами
-            if ( $form->load(Yii::$app->request->post()) && $l_form->load(Yii::$app->request->post()) ) {
-                // если данные получены сохраняем их и выводим сообщение об успехе иначе ошибка
-                if ($form->save() && $l_form->save()) {
-		    $msg = $this->createMessаge('Категория изменена!', 1);
-                } else {
-		    $msg = $this->createMessаge('Категория не изменена!', 0);
-                }
-            } else {
-                $msg = null;
+                $this->msg = ['Категория не изменена!', 0];
             }
         }
 
+        $id_parent_category = Clinks::find()
+            ->where(['id_category_child' => $id])
+            ->one();
 
-        // выбираем все категории и передаем в форму изменения категории
-        $query = "SELECT * FROM categorys";
-        $cat = Categorys::findBySql($query)->asArray()->all();
-
-        return $this->render('change_category', compact('form', 'l_form', 'msg', 'cat'));
+        return $this->render('change_category', [
+            'form_category' => $this->form_category,
+            'form_clink' => $this->form_clink,
+            'msg' => $this->msg,
+            'arr_all_categorys' => $this->arr_all_categorys,
+            'id_parent_category' => $id_parent_category
+        ]);
     }
 
-
-
-    // Изменение товара
     public function actionChangeGood($id = null)
     {
-        // выбираем товар по id
-        $form = Goods::findOne($id);
+        $this->form_good = Goods::findOne($id);
+        $this->form_link = Links::find()->where(['id_good' => $id])->one();
 
-        // выбираем категорию к которой принадлежит товар
-        $query = "SELECT * FROM links WHERE id_good LIKE {$id}";
-        $l_form = Links::findBySql($query)->one();
+        if ($this->form_good->load(Yii::$app->request->post())
+            && $this->form_link->load(Yii::$app->request->post())) {
 
-        if ( $form->load(Yii::$app->request->post()) && $l_form->load(Yii::$app->request->post())) {
-            // если данные переданы сохраняем их и выводим сообщение об успехе иначе ошибка
-            if ($form->save() && $l_form->save()) {
-		$msg = $this->createMessаge('Товар изменен!', 1);
+            if ($this->form_good->save() && $this->form_link->save()) {
+                $this->msg = ['Товар изменен!', 1];
             } else {
-		$msg = $this->createMessаge('Товар не изменен!', 0);
+                $this->msg = ['Товар не изменен!', 0];
             }
-        } else {
-            $msg = null;
         }
 
-        // выбираем все категории и передаем в форму изменения товара
-        $query = "SELECT * FROM categorys";
-        $cat = Categorys::findBySql($query)->asArray()->all();
+        $id_parent_category = Links::find()->where(['id_good' => $id])->one();
 
-        return $this->render('change_good', compact('form', 'l_form', 'msg', 'cat'));
+        return $this->render('change_good', [
+            'form_good' => $this->form_good,
+            'form_link' => $this->form_link,
+            'msg' => $this->msg,
+            'arr_all_categorys' => $this->arr_all_categorys,
+            'id_parent_category' => $id_parent_category
+        ]);
     }
 
-    private function createMessаge($msg, $color)
+    private function deleteCategory($id_del_category)
     {
-	    if ($color==1) {
-	   	$msg = '<div class="alert alert-success" role="alert">'.$msg.' <a class="btn btn-success" href="index.php?r=site/index" role="button">OK</a></div>'; 
-	    } else {
-	   	$msg = '<div class="alert alert-danger" role="alert">'.$msg.' <a class="btn btn-danger" href="index.php?r=site/index" role="button">OK</a></div>';  
-	    }
-	    return $msg;
+        $del = $this->checkDeleteCategory($id_del_category);
+        
+        if ($del[0] === true) {
+            $del[1][0]->delete();
+            $del[1][1]->delete();
+            $msg = ['Категория удалена!', 1];
+            return $msg;
+        } else {
+            return $del[1];
+        }
+    }
+
+    private function deleteGood($id_del_good)
+    {
+        $del[0] = Goods::findOne($id_del_good);
+        $del[1] = Links::findOne($id_del_good);
+
+        if ($del[0] != null) {
+            $del[0]->delete();
+            $del[1]->delete();
+            $msg = ['Товар удален!', 1];
+        } else {
+            $msg = ['Товар не существует!', 0];
+        }
+        
+        return $msg;
+    }
+
+    private function getCategorysArr()
+    {
+        $categorys = Categorys::find()->asArray()->all();
+        foreach ($categorys as $c) {
+            $arr_all_categorys[$c['id']] = $c['category'];
+        }
+        return $arr_all_categorys;
+    }
+
+    private function checkDeleteCategory($id_del_category)
+    {
+        $del[0] = Categorys::findOne($id_del_category);
+        $form_link = Links::find()
+            ->where(['id_category' => $id_del_category])
+            ->all();
+        $form_clink = Clinks::find()
+            ->where(['id_category_parent' => $id_del_category])
+            ->all();
+
+        if ($form_clink) {
+            $msg = ['Категория содержит вложенные категории!', 0];
+            return [false, $msg];
+        } elseif ($form_link) {
+            $msg = ['Категория содержит товары!', 0];
+            return [false, $msg];
+        } elseif ($del[0] == null) {
+            $msg = ['Категории не существует!', 0];
+            return [false, $msg];
+        } else {
+            $del[1] = Clinks::findOne($id_del_category);
+            return [true, $del];
+        }
     }
 }

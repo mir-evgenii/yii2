@@ -38,6 +38,7 @@ CREATE TABLE `categorys` (
 --
 
 INSERT INTO `categorys` (`id`, `category`) VALUES
+(0, 'Корневая'),
 (1, 'Мебель'),
 (2, 'Бытовая техника'),
 (3, 'Товары для дома');
@@ -58,6 +59,7 @@ CREATE TABLE `clinks` (
 --
 
 INSERT INTO `clinks` (`id_category_child`, `id_category_parent`) VALUES
+(3, 0),
 (1, 3),
 (2, 3);
 

@@ -1,28 +1,29 @@
 <?php
 use yii\widgets\ActiveForm;
+use yii\widgets\ActiveField;
 use yii\helpers\Html;
 
+// выводим сообщение об ошибке или успехе
+include 'msg.php';
+
+echo "<h4 class='text-black-50 mb-3'>Создание категории</h4>";
+
 // Форма создания категории
-
-// выводим форму и поля
 $input = ActiveForm::begin();
-echo $input->field($form, 'category')->label('Имя новой категории');
-echo $input->field($l_form, 'id_category_parent')->label('Номер родительской категории');
 
-// выводим список категорий
-echo "<select class='custom-select' id='inputGroupSelect01'>";
-foreach ($cat as $c){
-    echo "<option value='{$c['id']}'>{$c['category']}</option>";
-}
-echo "</select>";
+// выводим поля
+echo $input->field($form_category, 'category')
+	->label('Имя новой категории', ['class' => 'font-weight-bold text-black-50']);
+echo $input->field($form_clink, 'id_category_parent')
+	->dropDownList($arr_all_categorys)
+	->label('Категория', ['class' => 'font-weight-bold text-black-50']);
 
-// ссылка на главную страницу
-echo "<a class='btn btn-primary' href='index.php?r=site/index' role='button'>Назад</a>";
-
-echo Html::submitButton('Создать категорию', ['class' => 'btn btn-primary', 'type' => 'submit']);
+// выводим кнопки
+echo "<div class='btn-group mt-3'>";
+echo Html::submitButton('Создать категорию',
+	['class' => 'btn btn-outline-success']);
+echo "<a class='btn btn-outline-primary' 
+	href='index.php' role='button'>Назад</a>";
+echo "</div>";
 
 ActiveForm::end();
-
-// выводим сообщение об ошибке или успехе
-echo $msg;
-

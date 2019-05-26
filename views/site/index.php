@@ -1,88 +1,47 @@
 <?php
-
 // Главная страница
 
-// сообщение об ошибке или успехе
-echo $msg;
+// выводим сообщение об успехе или ошибку
+include 'msg.php';
 
+$this->params['id_this_category'] = $id;
+$this->params['name_this_category'] = $name_this_category;
 
-
-// выводим категории первого уровня
-if(@$parents){
-    echo "<h4>Категории</h4>
-	  <table class='table'>
-	  <thead class='thead-light'>
-            <tr>
-                <th scope='col'>Название</th>
-                <th scope='col'></th>
-                <th scope='col'></th>
-	    <tr>
-	  </thead>
-    ";
-    foreach($parents as $parent){
-        echo "<tbody><tr>";
-        echo "<td><a href='index.php?r=site/index&id={$parent->parent['0']->id}'>".$parent->parent['0']->category."</a></td>
-              <td><a href='index.php?r=site/change-category&id={$parent->parent['0']->id}'>Изменить</a></td>
-              <td><a href='index.php?r=site/index&c_del={$parent->parent['0']->id}'>Удалить</a></td>
-              ";
-        echo "</tbody></tr>";
+// выводим категории
+if (@$categorys) {
+    $this->beginContent('@app/views/layouts/category_table_head.php');
+    $this->endContent();
+    foreach ($categorys as $category) {
+        $this->params['id'] = $category->child['0']->id;
+        $this->params['category'] = $category->child['0']->category;
+        $this->beginContent('@app/views/layouts/category_table_body.php');
+        $this->endContent();
     }
     echo "</table>";
 }
-
-
-
-// выводим вложенные категории
-if(@$childs){
-    echo "<h4>Категории вложенные в категорию \"{$cat}\"</h4>
-          <table class='table'>
-	  <thead class='thead-light'>
-            <tr>
-                <th scope='col'>Название</th>
-                <th scope='col'></th>
-                <th scope='col'></th>
-            <tr>
-	  </thead>
-    ";
-    foreach($childs as $child){
-        echo "<tbody><tr>";
-        echo "<td><a href='index.php?r=site/index&id={$child->child['0']->id}'>".$child->child['0']->category."</a></td>
-              <td><a href='index.php?r=site/change-category&id={$child->child['0']->id}'>Изменить</a></td>
-              <td><a href='index.php?r=site/index&c_del={$child->child['0']->id}'>Удалить</a></td>
-              ";
-        echo "</tbody></tr>";
-    }
-    echo "</table>";
-}
-
-
 
 // выводим товары
-if(@$goods){
-    echo "<h4>Товары категории \"{$cat}\"</h4>
-          <table class='table'>
-	  <thead class='thead-light'>
-            <tr>
-                <th scope='col'>Название</th>
-                <th scope='col'>Цена</th>
-                <th scope='col'>Кол-во</th>
-                <th scope='col'></th>
-                <th scope='col'></th>
-	    </tr>
-	  </thead>";
-    foreach($goods as $good){
-        echo "<tbody><tr>";
-        echo "<td>".$good->goods['0']->good."</td>
-              <td>".$good->goods['0']->price."</td>
-              <td>".$good->goods['0']->number."</td>
-              <td><a href='index.php?r=site/change-good&id={$good->goods['0']->id}'>Изменить</a></td>
-              <td><a href='index.php?r=site/index&g_del={$good->goods['0']->id}'>Удалить</a></td>";
-        echo "</tbody></tr>";
+if (@$goods) {
+    $this->beginContent('@app/views/layouts/goods_table_head.php');
+    $this->endContent();
+    foreach ($goods as $good) {
+        $this->params['id'] = $good->goods['0']->id;
+        $this->params['good'] = $good->goods['0']->good;
+        $this->params['price'] = $good->goods['0']->price;
+        $this->params['number'] = $good->goods['0']->number;
+        $this->beginContent('@app/views/layouts/goods_table_body.php');
+        $this->endContent();
     }
     echo "</table>";
 }
 
-// если мы находимся во вложенной категории выводим ссылку на главную страницу
-if (@$cat) {
-    echo "<a class='btn btn-primary' href='index.php?r=site/index' role='button'>Назад</a>";
+// выводим кнопку назад
+if (@$id_parent_category) {
+    echo "
+<a class='btn btn-outline-primary' 
+   href='index.php?r=site/index&id={$id_parent_category["id_category_parent"]}'
+   role='button'>
+    Назад
+</a>
+    ";
 }

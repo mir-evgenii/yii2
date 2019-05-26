@@ -2,31 +2,35 @@
 use yii\widgets\ActiveForm;
 use yii\helpers\Html;
 
-// Форма изменения категории
+// выводим сообщение об успехе или ошибку
+include 'msg.php';
 
-// выводим форму и поля
+echo "<h4 class='text-black-50 mb-3'>Изменение категории</h4>";
+
+// Форма изменения категории
 $input = ActiveForm::begin();
-echo $input->field($form, 'category')->label('Имя категории');
+
+// выводим поля
+echo $input->field($form_category, 'category')
+	->label('Имя категории', ['class' => 'font-weight-bold text-black-50']);
 
 // проверяем переданы ли данные о родительской категории
-if ($l_form){
-    echo $input->field($l_form, 'id_category_parent')->label('Номер родительской категории');
+if ($form_clink) {
+    echo $input->field($form_clink, 'id_category_parent')
+    	->dropDownList($arr_all_categorys)
+    	->label('Категория', ['class' => 'font-weight-bold text-black-50']);
 } else {
-    echo "Это корневая категория, она не вложена не в одну категорию.";
+    echo "<div class='alert alert-primary' role='alert'>
+    	Это корневая категория, она не вложена не в одну категорию.</div>";
 }
 
-// выводим список категорий
-echo "<ul>";
-foreach ($cat as $c){
-    echo "<li>Категория: {$c['id']} > \"{$c['category']}\"</li>";
-}
-echo "</ul>";
+// выводим кнопки
+echo "<div class='btn-group mt-3'>";
+echo Html::submitButton('Изменить категорию',
+	['class' => 'btn btn-outline-success']);
+echo "<a class='btn btn-outline-primary'
+	href='index.php?r=site/index&id={$id_parent_category["id_category_parent"]}'
+	role='button'>Назад</a>";
+echo "</div>";
 
-echo Html::submitButton('Изменить категорию');
 ActiveForm::end();
-
-// выводим сообщение об успехе или ошибку
-echo $msg;
-
-// ссылка на главную страницу
-echo "<a href='index.php?r=site/index'>Назад</a>";
